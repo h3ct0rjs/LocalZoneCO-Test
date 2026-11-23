@@ -10,25 +10,42 @@ Bogotá: a laptop on Wi-Fi and a Talos Linux Kubernetes cluster on Ethernet.
 ## Results
 
 Measured on 2026-11-23 from a residential internet connection in Bogotá.
-100 ICMP pings per client, 0.2 s apart.
+Two runs per client: the first by hand, the second with the scripts in
+`scripts/`. Each run sends 100 ICMP pings, 0.2 s apart.
 
-| Measurement | Talos cluster (Ethernet) | Mac (Wi-Fi) |
-|---|---|---|
-| Ping min | 15.1 ms | 18.3 ms |
-| Ping avg | 26.5 ms | 37.2 ms |
-| Ping max | 112.5 ms | 184.0 ms |
-| Packet loss | 0% | 0% |
-| TCP connect to nginx, min | 20.2 ms | 22.6 ms |
-| TCP connect to nginx, avg | 27.8 ms | 39.5 ms |
+### Latency
 
-iperf3 from the cluster, 5-second TCP runs:
+| Measurement | Talos run 1 | Talos run 2 | Mac run 1 | Mac run 2 |
+|---|---|---|---|---|
+| Ping min | 15.1 ms | 14.0 ms | 18.3 ms | 19.5 ms |
+| Ping avg | 26.5 ms | 23.1 ms | 37.2 ms | 37.2 ms |
+| Ping max | 112.5 ms | 50.9 ms | 184.0 ms | 160.6 ms |
+| Packet loss | 0% | 0% | 0% | 0% |
+| TCP connect min | 20.2 ms | 18.5 ms | 22.6 ms | 19.3 ms |
+| TCP connect avg | 27.8 ms | 80.2 ms | 39.5 ms | 29.0 ms |
+| TCP connect max | 61.7 ms | 1052.3 ms | 84.3 ms | 35.8 ms |
 
-| Direction | Throughput |
-|---|---|
-| Upload (cluster to server) | 33 Mbit/s |
-| Download (server to cluster) | 31 Mbit/s |
+The Talos cluster is on Ethernet and the Mac is on Wi-Fi. The 1052 ms
+maximum in Talos run 2 is a single sample that took about one second, which
+matches one retransmitted TCP SYN; it pulls that run's average up to 80 ms.
 
-The throughput is limited by the residential line, not by the instance.
+### Throughput (iperf3, TCP)
+
+| Direction | Talos run 1 (5 s) | Talos run 2 (5 s) | Mac run 2 (10 s) |
+|---|---|---|---|
+| Upload (client to server) | 33 Mbit/s | 5 Mbit/s | 25 Mbit/s |
+| Upload retransmissions | 14 | 206 | 1456 |
+| Download (server to client) | 31 Mbit/s | 376 Mbit/s | 20 Mbit/s |
+| Download retransmissions | 1 | 572 | 80 |
+
+UDP from the Mac at a 50 Mbit/s target (10 s): 40.4 Mbit/s received,
+0.9 ms jitter, 18% packet loss.
+
+Throughput varied a lot between runs on the same line: download from the
+cluster went from 31 to 376 Mbit/s, and upload from 33 down to 5 Mbit/s.
+The retransmission counts and the UDP loss point to packet loss on the
+uplink of the residential connection. Treat these throughput figures as a
+description of that connection, not of the instance.
 
 ### Where the latency comes from
 
